@@ -35,8 +35,8 @@ public:
     ~Timer()
     {
         duration += std::chrono::duration_cast<duration_t>(clock_t::now() - m_start).count();
-        std::cout << m_name << std::endl;
-        std::cout << "Lead time(ms): " << duration << std::endl;
+//        std::cout << m_name << std::endl;
+//        std::cout << "Lead time(ms): " << duration << std::endl;
     }
 private:
     time_point_t m_start;

@@ -32,6 +32,18 @@ int main()
         v1.push_back(i);
     }
 
+    
+    try {
+    v1.reserve(v1.max_size());
+    }
+    catch(...) {
+    что-то пишем
+    }
+    
+    
+    
+    
+    
     std::cout << "size of vector: "  << v1.size() << std::endl;
     std::cout << "capacity: " << v1.capacity() << std::endl;
 

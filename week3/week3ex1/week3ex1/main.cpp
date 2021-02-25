@@ -4,7 +4,7 @@
 #include <array>
 #include <iomanip>
 #include <algorithm>
-#include <ctime>
+#include <random>
 
 #include "Timer.h"
 
@@ -14,9 +14,10 @@ int main()
     
     std::vector<int> v;
     std::set<int> s;
-    std::array<int, 1000000> a;
+//    std::array<int, 1000000> a;
 
     Timer tv("vector");
+    std::default_random_engine dre;
     v.reserve(10000000);
     for (auto i = 9999999 ; i >= 0; --i)
     {
@@ -24,11 +25,10 @@ int main()
     }
     tv.pause();
 
-    std::srand(unsigned(time(0)));
-    std::random_shuffle(std::begin(v), std::end(v));
+    std::shuffle(std::begin(v), std::end(v), dre);
 
     Timer ts("set");
-    for(auto i = 0; i < std::size(v); ++i)
+    for(auto i = 0; i < v.size(); ++i)
     {
         s.insert(v[i]);
     }
@@ -46,7 +46,7 @@ int main()
     std::sort(std::begin(v), std::end(v));
     tv.pause();
 
-    std::cout << "Number of elements: " << std::size(v) << std::endl;
+    std::cout << "Number of elements: " << v.size() << std::endl;
     // std::cout << std::setw(25) << std::left << ta.name() << std::setw(40) << ta.drtn() << std::endl;
     std::cout << std::setw(25) << std::left << tv.name() << std::setw(40) << tv.drtn() << std::endl;
     std::cout << std::setw(25) << std::left << ts.name() << std::setw(40) << ts.drtn() << std::endl;

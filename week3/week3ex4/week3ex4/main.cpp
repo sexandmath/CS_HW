@@ -9,8 +9,8 @@
 
 std::set <std::string> makeRandomWords (std::size_t N, std::size_t length)
 {
-    std::uniform_int_distribution letter(97, 122);
-    std::default_random_engine  e(static_cast <std::size_t> (std::chrono::system_clock::now().time_since_epoch().count()));
+    std::uniform_int_distribution<int> letter(97, 122);
+    std::default_random_engine  e(static_cast <unsigned int> (std::chrono::system_clock::now().time_since_epoch().count()));
 
     std::set <std::string> words;
 
@@ -178,23 +178,23 @@ int main()
         v.push_back(l);
     }
 
-    std::vector<std::size_t> hc_1(std::size(v));
+    std::vector<std::size_t> hc_1(v.size());
     std::set<std::size_t> hc;
 
     
-    std::ofstream fout("hw3e4.txt");
+
 
    
-    fout << "data for RSHash" << std::endl;
+    std::cout << "data for RSHash" << std::endl;
 
-    for(auto i = 0; i < std::size(v); ++i)
+    for(auto i = 0; i < v.size(); ++i)
     {
         hc_1[i] = RSHash(v[i], 10)%64;
     }
 
     std::size_t i;
     std::size_t num_of_collisions;
-    for (auto N = 10; N < std::size(hc_1); N+=10)
+    for (auto N = 10; N < hc_1.size(); N+=10)
     {
         for(i = 0; i < N; ++i)
         {
@@ -207,22 +207,22 @@ int main()
         
             }
         }
-        num_of_collisions = N - std::size(hc);
-        fout << N << "      " << num_of_collisions << std::endl;
+        num_of_collisions = N - hc.size();
+        std::cout << N << "      " << num_of_collisions << std::endl;
         hc.clear();
     }
 
     
     
-    fout << "data for JSHash" << std::endl;
+    std::cout << "data for JSHash" << std::endl;
    
-    for(auto i = 0; i < std::size(v); ++i)
+    for(auto i = 0; i < v.size(); ++i)
     {
         hc_1[i] = JSHash(v[i], 10)%64;
     }
 
     num_of_collisions = 0;
-    for (auto N = 10; N < std::size(hc_1); N+=10)
+    for (auto N = 10; N < hc_1.size(); N+=10)
     {
         for(i = 0; i < N; ++i)
         {
@@ -235,22 +235,22 @@ int main()
         
             }
         }
-        num_of_collisions = N - std::size(hc);
-        fout << N << "      " << num_of_collisions << std::endl;
+        num_of_collisions = N - hc.size();
+        std::cout << N << "      " << num_of_collisions << std::endl;
         hc.clear();
     }
 
     
     
-    fout << "data for PJWHash" << std::endl;
+    std::cout << "data for PJWHash" << std::endl;
 
-    for(auto i = 0; i < std::size(v); ++i)
+    for(auto i = 0; i < v.size(); ++i)
     {
         hc_1[i] = PJWHash(v[i], 10)%64;
     }
 
     num_of_collisions = 0;
-    for (auto N = 10; N < std::size(hc_1); N+=10)
+    for (auto N = 10; N < hc_1.size(); N+=10)
     {
         for(i = 0; i < N; ++i)
         {
@@ -263,22 +263,22 @@ int main()
         
             }
         }
-        num_of_collisions = N - std::size(hc);
-        fout << N << "      " << num_of_collisions << std::endl;
+        num_of_collisions = N - hc.size();
+        std::cout << N << "      " << num_of_collisions << std::endl;
         hc.clear();
     }
    
    
 
-    fout << "data for ELFHash" << std::endl;
+    std::cout << "data for ELFHash" << std::endl;
 
-    for(auto i = 0; i < std::size(v); ++i)
+    for(auto i = 0; i < v.size(); ++i)
     {
         hc_1[i] = ELFHash(v[i], 10)%64;
     }
 
     num_of_collisions = 0;
-    for (auto N = 10; N < std::size(hc_1); N+=10)
+    for (auto N = 10; N < hc_1.size(); N+=10)
     {
         for(i = 0; i < N; ++i)
         {
@@ -291,22 +291,22 @@ int main()
         
             }
         }
-        num_of_collisions = N - std::size(hc);
-        fout << N << "      " << num_of_collisions << std::endl;
+        num_of_collisions = N - hc.size();
+        std::cout << N << "      " << num_of_collisions << std::endl;
         hc.clear();
     }
 
        
        
-    fout << "data for BKDRHash" << std::endl;
+    std::cout << "data for BKDRHash" << std::endl;
 
-    for(auto i = 0; i < std::size(v); ++i)
+    for(auto i = 0; i < v.size(); ++i)
     {
         hc_1[i] = BKDRHash(v[i], 10)%64;
     }
 
     num_of_collisions = 0;
-    for (auto N = 10; N < std::size(hc_1); N+=10)
+    for (auto N = 10; N < hc_1.size(); N+=10)
     {
         for(i = 0; i < N; ++i)
         {
@@ -319,22 +319,22 @@ int main()
         
             }
         }
-        num_of_collisions = N - std::size(hc);
-        fout << N << "      " << num_of_collisions << std::endl;
+        num_of_collisions = N - hc.size();
+        std::cout << N << "      " << num_of_collisions << std::endl;
         hc.clear();
     }
 
        
        
-    fout << "data for SDBMHash" << std::endl;
+    std::cout << "data for SDBMHash" << std::endl;
 
-    for(auto i = 0; i < std::size(v); ++i)
+    for(auto i = 0; i < v.size(); ++i)
     {
         hc_1[i] = SDBMHash(v[i], 10)%64;
     }
 
     num_of_collisions = 0;
-    for (auto N = 10; N < std::size(hc_1); N+=10)
+    for (auto N = 10; N < hc_1.size(); N+=10)
     {
         for(i = 0; i < N; ++i)
         {
@@ -347,21 +347,21 @@ int main()
         
             }
         }
-        num_of_collisions = N - std::size(hc);
-        fout << N << "      " << num_of_collisions << std::endl;
+        num_of_collisions = N - hc.size();
+        std::cout << N << "      " << num_of_collisions << std::endl;
         hc.clear();
     }
        
        
-    fout << "data for DJBHash" << std::endl;
+    std::cout << "data for DJBHash" << std::endl;
 
-    for(auto i = 0; i < std::size(v); ++i)
+    for(auto i = 0; i < v.size(); ++i)
     {
         hc_1[i] = DJBHash(v[i], 10) % 64;
     }
 
     num_of_collisions = 0;
-    for (auto N = 10; N < std::size(hc_1); N+=10)
+    for (auto N = 10; N < hc_1.size(); N+=10)
     {
         for(i = 0; i < N; ++i)
         {
@@ -374,21 +374,21 @@ int main()
         
             }
         }
-        num_of_collisions = N - std::size(hc);
-        fout << N << "      " << num_of_collisions << std::endl;
+        num_of_collisions = N - hc.size();
+        std::cout << N << "      " << num_of_collisions << std::endl;
         hc.clear();
     }
        
        
-    fout << "data for DEKHash" << std::endl;
+    std::cout << "data for DEKHash" << std::endl;
 
-    for(auto i = 0; i < std::size(v); ++i)
+    for(auto i = 0; i < v.size(); ++i)
     {
         hc_1[i] = DEKHash(v[i], 10)%64;
     }
 
     num_of_collisions = 0;
-    for (auto N = 10; N < std::size(hc_1); N+=10)
+    for (auto N = 10; N < hc_1.size(); N+=10)
     {
         for(i = 0; i < N; ++i)
         {
@@ -401,8 +401,8 @@ int main()
         
             }
         }
-        num_of_collisions = N - std::size(hc);
-        fout << N << "      " << num_of_collisions << std::endl;
+        num_of_collisions = N - hc.size();
+        std::cout << N << "      " << num_of_collisions << std::endl;
         hc.clear();
     }
 

@@ -32,9 +32,9 @@ int main()
     }
 
     auto i = 0;
-    for(i = 0; i < std::size(v); ++i)
+    for(i = 0; i < v.size(); ++i)
     {
-        for(auto j = i + 1; j < std::size(v); ++j)
+        for(auto j = i + 1; j < v.size(); ++j)
         {
            if(v[i] == v[j])
             {
@@ -49,12 +49,10 @@ int main()
         v[i] = hash_for_double(v1[i])%64;
     }
 
-    std::ofstream fout("hw3e2.csv");
-    fout << "elem,coll" << std::endl;
     std::set<std::size_t> set;
     std::size_t num_of_collisions;
 
-    for (auto N = 10; N < std::size(v); N+=10)
+    for (auto N = 10; N < v.size(); N+=10)
     {
         for(i = 0; i < N; ++i)
         {
@@ -66,8 +64,8 @@ int main()
                 }
             }
         }
-        num_of_collisions = N - std::size(set);
-        fout << N << ',' << num_of_collisions << std::endl;
+        num_of_collisions = N - set.size();
+        std::cout << N << " "  << num_of_collisions << std::endl;
     }
     
 
