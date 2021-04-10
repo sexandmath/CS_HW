@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <algorithm>
 #include <vector>
@@ -56,7 +57,16 @@ void matching(Iterator first, Iterator last, std::size_t len, std::string & d, s
 {
     for(auto i = first; i < last; ++i)
     {
-        if (*i == d)
+        bool flag = false;
+        for(auto j = i, k = std::begin(d);j < std::next(j, std::size(d)), k < std::end(d); ++j, ++k)
+        {
+            flag = (*j == *k ? true : false);
+            if(flag == false)
+            {
+                break;
+            }
+        }
+        if (flag == true)
         {
             auto l = len + std::distance(first, i);
             std::lock_guard<std::mutex> lg(mut);
@@ -71,7 +81,7 @@ void parallel_find(Iterator beg, Iterator end, std::string data)
     const std::size_t length = std::distance(beg, end);
     std::vector<std::size_t> coincidences;
 
-    if (!length)
+    if (!length | length < std::size(data))
         std::cout << "Something wrong" << '\n';
     
     const std::size_t num_threads =
@@ -79,7 +89,7 @@ void parallel_find(Iterator beg, Iterator end, std::string data)
 
     
 
-    const std::size_t block_size = length/ num_threads;
+    const std::size_t block_size = (length/ num_threads < std::size(data) ? std::size(data) : length/ num_threads);
 
     std::vector < std::future < void > > futures(num_threads - 1);
     std::vector < std::thread >          threads(num_threads - 1);
@@ -96,14 +106,12 @@ void parallel_find(Iterator beg, Iterator end, std::string data)
         std::packaged_task < void(Iterator, Iterator, std::size_t, std::string &, std::vector<std::size_t>&) > task(matching<Iterator>);
 
         futures[i] = task.get_future();
-        threads[i] = std::thread(std::move(task), first_block, last_block, std::distance(beg, first_block), std::ref(data), std::ref(coincidences));
+        threads[i] = std::thread(std::move(task), first_block, std::next(last_block, std::size(data)-1), std::distance(beg, first_block), std::ref(data), std::ref(coincidences));
 
         first_block = last_block;
     }
 
     matching(first_block, end, std::distance(beg, first_block), std::ref(data), std::ref(coincidences));
-
-
 
     for (std::size_t i = 0; i < (num_threads - 1); ++i)
     {
@@ -140,12 +148,9 @@ int main()
         {
             data.erase(i);
         }
-        std::for_each(i, std::next(i, std::size(data_to_find)), [&seq, &k](auto elem){ seq[k] += elem;
-         } );
-         ++k;
     }
-    std::cout << std::size(data) << std::endl;
-    parallel_find(std::begin(seq), std::end(seq), data_to_find);
+    
+    parallel_find(std::begin(data), std::end(data), data_to_find);
 
     return 0;
 }

@@ -6,7 +6,7 @@
 #include <thread>
 #include <random>
 #include <vector>
-#include <mutex>
+#include <atomic>
 
 
 
@@ -48,15 +48,15 @@ private:
 
 
     
-std::mutex mut;
+    
 
-std::size_t Monte_Carlo(std::size_t N, std::size_t & result)
+std::size_t Monte_Carlo(std::size_t N, std::atomic<std::size_t> & result)
 {
     std::random_device rd;
     std::mt19937 engine_mt(rd());
     std::uniform_real_distribution<double> myrandom(0, 1);
 
-    std::lock_guard<std::mutex> lg(mut);
+    
        for(auto i = 0; i < N; ++i)
     {
            if(std::pow(myrandom(engine_mt), 2) + std::pow(myrandom(engine_mt), 2) <= 1)
@@ -88,12 +88,12 @@ double parallel_Monte_Carlo(const std::size_t N)
     Threads_Guard guard(threads);
 
     
-    std::size_t result = 0;
+    std::atomic<std::size_t> result = 0;
 
     for (std::size_t i = 0; i < (num_threads - 1); ++i)
     {
         
-        std::packaged_task < std::size_t(std::size_t, std::size_t &) > task(Monte_Carlo);
+        std::packaged_task < std::size_t(std::size_t, std::atomic<std::size_t> &) > task(Monte_Carlo);
 
         futures[i] = task.get_future();
         threads[i] = std::thread(std::move(task), block_size, std::ref(result));
