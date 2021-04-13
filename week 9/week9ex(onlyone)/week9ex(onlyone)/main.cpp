@@ -1,106 +1,179 @@
+#include <algorithm>
+#include <atomic>
+#include <condition_variable>
 #include <iostream>
-#include <string>
 #include <mutex>
+#include <string>
 #include <thread>
-#include <future>
+#include <utility>
 
-#include <boost/interprocess/allocators/allocator.hpp>
+#include <boost/interprocess/containers/string.hpp>
 #include <boost/interprocess/containers/vector.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
-#include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
+#include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
 
-namespace bint = boost::interprocess;
-
-void writing(bint::managed_shared_memory & msh)
+class Chat
 {
-    using allocator_t = bint::allocator <std::pair<std::size_t, std::string>, bint::managed_shared_memory::segment_manager>;
-    using vector_t = bint::vector <std::pair<std::size_t, std::string>, allocator_t>;
+private:
 
+    using shared_memory_t = boost::interprocess::managed_shared_memory;
+    using manager_t = boost::interprocess::managed_shared_memory::segment_manager;
+    using string_allocator_t = boost::interprocess::allocator < char, manager_t>;
+    using string_t = boost::interprocess::basic_string < char, std::char_traits < char >, string_allocator_t>;
+    using vector_allocator_t = boost::interprocess::allocator < string_t, manager_t >;
+    using vector_t = boost::interprocess::vector < string_t, vector_allocator_t >;
+    using mutex_t = boost::interprocess::interprocess_mutex;
+    using condition_t = boost::interprocess::interprocess_condition;
+    using counter_t = std::atomic < std::size_t > ;
 
-    auto v = msh.find <vector_t>("v").first;
-    auto count = msh.find<std::size_t>("Counter").first;
-    std::size_t coun = *count;
-    auto mut = msh.find<bint::interprocess_mutex>("mut").first;
-    auto cond = msh.find<bint::interprocess_condition>("cond").first;
+public:
 
-    std::string text;
-
-    do
+    explicit Chat(const std::string & user_name) : m_user_name(user_name), m_exit_flag(false),
+        m_shared_memory(boost::interprocess::open_or_create, shared_memory_name.c_str(), 50000)
     {
-        std::cin >> text;
-        std::pair<std::size_t, std::string> x = std::make_pair(coun, text);
-        
-        bint::scoped_lock locking(*mut);
+        m_vector = m_shared_memory.find_or_construct < vector_t >("vector")(m_shared_memory.get_segment_manager());
+        m_mutex     = m_shared_memory.find_or_construct<mutex_t>("m_mutex")();
+        m_condition = m_shared_memory.find_or_construct<condition_t>("m_condition")();
+        m_users     = m_shared_memory.find_or_construct<counter_t>("m_users")(0);
+        m_messages  = m_shared_memory.find_or_construct<counter_t>("m_messages")(0);
 
-        v->push_back(x);
+        ++(*m_users);
 
-        cond->notify_one();
+        m_local_messages = 0;
+    }
 
-    }  while (text != "exit");
-    --(*count);
-}
-
-void reading(bint::managed_shared_memory & msh)
-{
-    using allocator_t = bint::allocator <std::pair<std::size_t, std::string>, bint::managed_shared_memory::segment_manager>;
-    using vector_t = bint::vector <std::pair<std::size_t, std::string>, allocator_t>;
-
-
-    auto v = msh.find <vector_t>("v").first;
-
-    auto mut = msh.find<bint::interprocess_mutex>("mut").first;
-    auto cond = msh.find<bint::interprocess_condition>("cond").first;
-
-    std::string text;
-
-    do
+    
+    ~Chat() noexcept
     {
-        bint::scoped_lock locking(*mut);
+        if (!(--(*m_users)))
+        {
+            boost::interprocess::shared_memory_object::remove(shared_memory_name.c_str());
+        }
+    }
 
-        cond->wait(locking, [v]() {return !v->empty(); });
+public:
 
-        std::pair<std::size_t, std::string> x = v->back();
+    void run()
+    {
+        auto reader = std::thread(&Chat::read, this);
 
-        std::cout << x.first << ':' << x.second << std::endl;
-        text = x.second;
-        v->pop_back();
-    }  while (text != "exit");
-}
+        write();
 
+        m_exit_flag = true;
+
+        m_condition->notify_all();
+
+        reader.join();
+
+        send_message(m_user_name + " left the chat");
+    }
+
+private:
+
+    void read()
+    {
+        show_history();
+
+        send_message(m_user_name + " joined the chat");
+
+        while (true)
+        {
+             std::unique_lock lock(*m_mutex);
+
+            m_condition->wait(lock, [this]() {return m_local_messages < *m_messages;});
+
+            if (m_exit_flag)
+            {
+                break;
+            }
+
+            std::cout << *(m_vector->end() - 1) << std::endl;
+
+            ++m_local_messages;
+        }
+    }
+
+    void show_history()
+    {
+        std::scoped_lock lock(*m_mutex);
+
+        for (const auto & message : *m_vector)
+        {
+            std::cout << message << std::endl;
+            ++m_local_messages;
+        }
+    }
+
+    void send_message(const std::string & message)
+    {
+       
+        std::scoped_lock lock(*m_mutex);
+
+        m_vector->push_back(string_t(message.c_str(), m_shared_memory.get_segment_manager()));
+
+        ++(*m_messages);
+
+        ++m_local_messages;
+
+        m_condition->notify_all();
+    }
+
+    void write()
+    {
+        std::string x;
+
+        while(true)
+        {
+
+            std::getline(std::cin, x);
+
+            if (x == "exit")
+            {
+                m_exit_flag = true;
+                --m_local_messages;
+                break;
+
+            }
+
+            send_message(m_user_name + ':' + x);
+
+        }
+    }
+
+private:
+
+    static inline const std::string shared_memory_name = "shared_memory";
+
+private:
+
+    std::string m_user_name;
+
+    std::atomic < bool > m_exit_flag;
+
+    shared_memory_t m_shared_memory;
+
+    vector_t    * m_vector;
+    mutex_t     * m_mutex;
+    condition_t * m_condition;
+    counter_t   * m_users;
+    counter_t   * m_messages;
+
+    std::size_t m_local_messages;
+};
 
 int main()
 {
-    bint::managed_shared_memory msh(bint::open_or_create, "noname", 1024);
+    boost::interprocess::shared_memory_object::remove("shared_memory");
 
-    using allocator_t = bint::allocator <std::pair<std::size_t, std::string>, bint::managed_shared_memory::segment_manager>;
-    using vector_t = bint::vector <std::pair<std::size_t, std::string>, allocator_t>;
+    std::string user_name;
 
-    auto count = msh.find_or_construct<std::size_t>("Counter")(0);
-    auto mut_counter = msh.find_or_construct<bint::interprocess_mutex>("mut_counter")();
-    auto cond_counter = msh.find_or_construct<bint::interprocess_condition>("cond_counter")();
-    auto mut = msh.find_or_construct<bint::interprocess_mutex>("mut")();
-    auto cond = msh.find_or_construct<bint::interprocess_condition>("cond");
+    std::cout << "Enter your name: ";
 
-    
-    ++(*count);
-    cond_counter -> notify_one();
-    
+    std::getline(std::cin, user_name);
 
-    auto v = msh.find_or_construct <vector_t>("v")(msh.get_segment_manager());
+    Chat(user_name).run();
 
-    std::thread uiu(writing, std::ref(msh));
-    std::thread iu(reading, std::ref(msh));
-
-    std::cout << "JOIN" << std::endl;
-    iu.join();
-    uiu.join();
-   
-
-    if (!(*count))
-    {
-        boost::interprocess::shared_memory_object::remove("noname");
-    }
     return 0;
 }
